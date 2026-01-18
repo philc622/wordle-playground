@@ -16,7 +16,9 @@ from scorer import scoreGuess
     # Duplicate in guess; single in solution
     ("BANAL", "CANOE", "02200"),
     # Duplicate in solution; single in guess
-    ("MOTOR", "ROTOR", "02222"), # Corrected based on algorithm
+    # Note: The spec and a code review suggested "02122", but the algorithm
+    # correctly produces "02222" as T is a green match at index 2.
+    ("MOTOR", "ROTOR", "02222"),
     # Duplicates on both sides
     ("ALLEY", "BELLE", "01210"), # Corrected based on algorithm
     # All wrong letters
