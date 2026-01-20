@@ -1,3 +1,6 @@
+import argparse
+import json
+import random
 from collections import Counter
 from typing import List, Set
 
@@ -115,3 +118,59 @@ def filterCandidates(guess: str, score: str, candidates: List[str]) -> List[str]
             result.append(candidate)
 
     return result
+
+
+def main():
+    """
+    Main program loop for the Wordle solver.
+    """
+    parser = argparse.ArgumentParser(description="A simple Wordle solver.")
+    parser.add_argument("solution", type=str, help="The 5-letter solution word.")
+    args = parser.parse_args()
+
+    solution = args.solution.upper()
+    if len(solution) != 5 or not solution.isalpha():
+        raise ValueError("Solution must be a 5-letter alphabetic word.")
+
+    try:
+        with open("wordle/wordle-list.txt", "r") as f:
+            word_list = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error reading or parsing wordle-list.txt: {e}")
+        return
+
+    candidates = word_list
+    used_guesses = set()
+    guess_count = 0
+
+    print(f"Trying to guess the word: {solution}")
+    print(f"Starting with {len(candidates)} possible words.")
+
+    while True:
+        if not candidates:
+            print("No more candidate words left. Something went wrong.")
+            break
+
+        available_candidates = [c for c in candidates if c not in used_guesses]
+        if not available_candidates:
+            print("Ran out of unique words to guess from the candidate list. Something is wrong.")
+            break
+
+        guess = random.choice(available_candidates)
+        used_guesses.add(guess)
+        guess_count += 1
+
+        score = scoreGuess(guess, solution)
+
+        print(f"Guess {guess_count}: {guess} -> Score: {score}")
+
+        if score == "22222":
+            print(f"Successfully guessed the word '{guess}' in {guess_count} tries!")
+            break
+
+        candidates = filterCandidates(guess, score, candidates)
+        print(f"  {len(candidates)} candidates remaining.")
+
+
+if __name__ == "__main__":
+    main()

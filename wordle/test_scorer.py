@@ -1,5 +1,9 @@
 import pytest
-from scorer import scoreGuess, filterCandidates
+from scorer import scoreGuess, filterCandidates, main
+from unittest.mock import patch, mock_open
+import io
+import sys
+import json
 
 # The test vectors are taken directly from the technical specification.
 # Note: There is a discrepancy in the spec for the "RAISE" vs "ARISE" case.
@@ -87,3 +91,32 @@ def test_filter_invalid_score_char():
 def test_filter_non_alphabetic_guess():
     with pytest.raises(ValueError, match="Guess must contain only alphabetic characters."):
         filterCandidates("STA-E", "20011", ["GREAT"])
+
+@patch('argparse.ArgumentParser.parse_args')
+@patch('scorer.random.choice')
+@patch('builtins.open', new_callable=mock_open, read_data=json.dumps(["crane", "plane", "apple"]))
+def test_main_loop_success(mock_file, mock_random_choice, mock_parse_args):
+    # Arrange
+    # Mock command line arguments
+    mock_parse_args.return_value.solution = "apple"
+
+    # Mock the sequence of random choices to ensure a deterministic test
+    mock_random_choice.side_effect = ["crane", "plane", "apple"]
+
+    # Capture stdout
+    old_stdout = sys.stdout
+    sys.stdout = captured_output = io.StringIO()
+
+    # Act
+    main()
+
+    # Restore stdout
+    sys.stdout = old_stdout
+
+    # Assert
+    output = captured_output.getvalue()
+    assert "Trying to guess the word: APPLE" in output
+    assert "Guess 1: crane -> Score: 00102" in output
+    assert "Guess 2: plane -> Score: 11102" in output
+    assert "Guess 3: apple -> Score: 22222" in output
+    assert "Successfully guessed the word 'apple' in 3 tries!" in output
