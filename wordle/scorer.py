@@ -120,17 +120,122 @@ def filterCandidates(guess: str, score: str, candidates: List[str]) -> List[str]
     return result
 
 
-def main():
-    """
-    Main program loop for the Wordle solver.
-    """
-    parser = argparse.ArgumentParser(description="A simple Wordle solver.")
-    parser.add_argument("solution", type=str, help="The 5-letter solution word.")
-    args = parser.parse_args()
+class WordleGame:
+    def __init__(self, solution: str, word_list: List[str]):
+        if len(solution) != 5 or not solution.isalpha():
+            raise ValueError("Solution must be a 5-letter alphabetic word.")
+        self.solution = solution.upper()
+        self.candidates = word_list
+        self.used_guesses = set()
+        self.guess_count = 0
+        self.solved = False
 
-    solution = args.solution.upper()
-    if len(solution) != 5 or not solution.isalpha():
-        raise ValueError("Solution must be a 5-letter alphabetic word.")
+    def suggest_guess(self) -> str:
+        available_candidates = [c for c in self.candidates if c not in self.used_guesses]
+        if not available_candidates:
+            raise ValueError("No more candidate words to suggest.")
+        return random.choice(available_candidates)
+
+    def guess_and_update(self, guess: str):
+        self.used_guesses.add(guess)
+        score = scoreGuess(guess, self.solution)
+        if score == "22222":
+            self.solved = True
+        self.candidates = filterCandidates(guess, score, self.candidates)
+        return score
+
+    def play_game(self):
+        print(f"Trying to guess the word: {self.solution}")
+        print(f"Starting with {len(self.candidates)} possible words.")
+
+        while not self.solved:
+            if not self.candidates:
+                print("No more candidate words left. Something went wrong.")
+                break
+
+            try:
+                guess = self.suggest_guess()
+            except ValueError as e:
+                print(e)
+                break
+
+            self.guess_count += 1
+            score = self.guess_and_update(guess)
+            print(f"Guess {self.guess_count}: {guess} -> Score: {score}")
+
+            if self.solved:
+                print(f"Successfully guessed the word '{guess}' in {self.guess_count} tries!")
+                break
+
+            print(f"  {len(self.candidates)} candidates remaining.")
+
+
+class QuordleGame:
+    def __init__(self, solutions: List[str], word_list: List[str]):
+        self.games = [WordleGame(s, word_list.copy()) for s in solutions]
+        self.guess_count = 0
+        self.used_guesses = set()
+
+    def suggest_guess(self) -> str:
+        # For simplicity, we'll just use the suggestion from the first unsolved game.
+        # A more advanced solver might try to find a word that is optimal for all games.
+        for game in self.games:
+            if not game.solved:
+                available_candidates = [c for c in game.candidates if c not in self.used_guesses]
+                if not available_candidates:
+                    continue
+                return random.choice(available_candidates)
+        raise ValueError("No more candidate words to suggest across all games.")
+
+    def play_game(self):
+        print("--- Welcome to Quordle Solver ---")
+        for i, game in enumerate(self.games):
+            print(f"Game {i+1} Solution: {game.solution}")
+        print("---------------------------------")
+
+        while not all(g.solved for g in self.games):
+            self.guess_count += 1
+
+            try:
+                guess = self.suggest_guess()
+                self.used_guesses.add(guess)
+            except ValueError as e:
+                print(e)
+                break
+
+            print(f"Guess {self.guess_count}: {guess}")
+
+            scores = []
+            for i, game in enumerate(self.games):
+                if not game.solved:
+                    score = game.guess_and_update(guess)
+                    scores.append(f"Game {i+1}: {score}")
+                    if game.solved:
+                        print(f"  Game {i+1} solved! Word: {game.solution}")
+                else:
+                    scores.append(f"Game {i+1}: SOLVED")
+
+            print("  Scores: " + ", ".join(scores))
+
+            if self.guess_count >= 9:
+                print("\nQuordle failed to solve within 9 guesses.")
+                break
+
+        if all(g.solved for g in self.games):
+            print(f"\nSuccessfully solved Quordle in {self.guess_count} guesses!")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="A Wordle and Quordle solver.")
+    # Wordle arguments
+    parser.add_argument("--solution", type=str, help="The 5-letter solution word for Wordle.")
+    # Quordle arguments
+    parser.add_argument("--s1", type=str, help="Solution for the first Quordle game.")
+    parser.add_argument("--s2", type=str, help="Solution for the second Quordle game.")
+    parser.add_argument("--s3", type=str, help="Solution for the third Quordle game.")
+    parser.add_argument("--s4", type=str, help="Solution for the fourth Quordle game.")
+
+    args = parser.parse_args()
 
     try:
         with open("wordle/wordle-list.txt", "r") as f:
@@ -139,37 +244,17 @@ def main():
         print(f"Error reading or parsing wordle-list.txt: {e}")
         return
 
-    candidates = word_list
-    used_guesses = set()
-    guess_count = 0
-
-    print(f"Trying to guess the word: {solution}")
-    print(f"Starting with {len(candidates)} possible words.")
-
-    while True:
-        if not candidates:
-            print("No more candidate words left. Something went wrong.")
-            break
-
-        available_candidates = [c for c in candidates if c not in used_guesses]
-        if not available_candidates:
-            print("Ran out of unique words to guess from the candidate list. Something is wrong.")
-            break
-
-        guess = random.choice(available_candidates)
-        used_guesses.add(guess)
-        guess_count += 1
-
-        score = scoreGuess(guess, solution)
-
-        print(f"Guess {guess_count}: {guess} -> Score: {score}")
-
-        if score == "22222":
-            print(f"Successfully guessed the word '{guess}' in {guess_count} tries!")
-            break
-
-        candidates = filterCandidates(guess, score, candidates)
-        print(f"  {len(candidates)} candidates remaining.")
+    if args.s1 and args.s2 and args.s3 and args.s4:
+        # Run Quordle
+        solutions = [args.s1, args.s2, args.s3, args.s4]
+        game = QuordleGame(solutions, word_list)
+        game.play_game()
+    elif args.solution:
+        # Run Wordle
+        game = WordleGame(solution=args.solution, word_list=word_list)
+        game.play_game()
+    else:
+        print("Please provide a solution for Wordle (--solution) or four solutions for Quordle (--s1, --s2, --s3, --s4).")
 
 
 if __name__ == "__main__":

@@ -99,6 +99,10 @@ def test_main_loop_success(mock_file, mock_random_choice, mock_parse_args):
     # Arrange
     # Mock command line arguments
     mock_parse_args.return_value.solution = "apple"
+    mock_parse_args.return_value.s1 = None
+    mock_parse_args.return_value.s2 = None
+    mock_parse_args.return_value.s3 = None
+    mock_parse_args.return_value.s4 = None
 
     # Mock the sequence of random choices to ensure a deterministic test
     mock_random_choice.side_effect = ["crane", "plane", "apple"]
@@ -120,3 +124,38 @@ def test_main_loop_success(mock_file, mock_random_choice, mock_parse_args):
     assert "Guess 2: plane -> Score: 11102" in output
     assert "Guess 3: apple -> Score: 22222" in output
     assert "Successfully guessed the word 'apple' in 3 tries!" in output
+
+class TestQuordleGame:
+    @patch('argparse.ArgumentParser.parse_args')
+    @patch('scorer.random.choice')
+    @patch('builtins.open', new_callable=mock_open, read_data=json.dumps([
+        "crane", "slate", "brick", "fight", "mound", "pluck", "pride", "wrong"
+    ]))
+    def test_quordle_game_solves_correctly(self, mock_file, mock_random_choice, mock_parse_args):
+        # Arrange
+        mock_parse_args.return_value.solution = None
+        mock_parse_args.return_value.s1 = "brick"
+        mock_parse_args.return_value.s2 = "fight"
+        mock_parse_args.return_value.s3 = "mound"
+        mock_parse_args.return_value.s4 = "wrong"
+
+        mock_random_choice.side_effect = [
+            "crane", "slate", "brick", "fight", "mound", "pluck", "pride", "wrong"
+        ]
+
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = io.StringIO()
+
+        # Act
+        main()
+
+        # Restore stdout
+        sys.stdout = old_stdout
+
+        # Assert
+        output = captured_output.getvalue()
+        assert "Successfully solved Quordle in 8 guesses!" in output
+        assert "Game 1 solved! Word: BRICK" in output
+        assert "Game 2 solved! Word: FIGHT" in output
+        assert "Game 3 solved! Word: MOUND" in output
+        assert "Game 4 solved! Word: WRONG" in output
