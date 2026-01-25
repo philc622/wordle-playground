@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Solver</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Wordle Solver</h1>
+    <div class="container">
+        <label for="solution">Enter the 5-letter solution:</label>
+        <input type="text" id="solution" name="solution" maxlength="5" pattern="[a-zA-Z]{5}" title="5-letter word">
+        <button id="solve-button">Solve</button>
+    </div>
+    <div id="results"></div>
+
+    <script src="solver.js"></script>
+</body>
+</html>
