@@ -1,5 +1,8 @@
 import pytest
-from scorer import scoreGuess, filterCandidates, main
+try:
+    from wordle.scorer import scoreGuess, filterCandidates, main
+except ImportError:
+    from scorer import scoreGuess, filterCandidates, main
 from unittest.mock import patch, mock_open
 import io
 import sys
@@ -93,7 +96,7 @@ def test_filter_non_alphabetic_guess():
         filterCandidates("STA-E", "20011", ["GREAT"])
 
 @patch('argparse.ArgumentParser.parse_args')
-@patch('scorer.random.choice')
+@patch('wordle.scorer.random.choice')
 @patch('builtins.open', new_callable=mock_open, read_data=json.dumps(["crane", "plane", "apple"]))
 def test_main_loop_success(mock_file, mock_random_choice, mock_parse_args):
     # Arrange
@@ -127,7 +130,7 @@ def test_main_loop_success(mock_file, mock_random_choice, mock_parse_args):
 
 class TestQuordleGame:
     @patch('argparse.ArgumentParser.parse_args')
-    @patch('scorer.random.choice')
+    @patch('wordle.scorer.random.choice')
     @patch('builtins.open', new_callable=mock_open, read_data=json.dumps([
         "crane", "slate", "brick", "fight", "mound", "pluck", "pride", "wrong"
     ]))
